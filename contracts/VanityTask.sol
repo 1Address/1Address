@@ -5,7 +5,7 @@ import './VanityLib.sol';
 import './VanityPool.sol';
 
 
-contract VanityTask is Ownable {
+contract VanityTask is Ownable, VanityLib {
 
     struct Answer {
         // Fetch from miner
@@ -37,7 +37,7 @@ contract VanityTask is Ownable {
         bytes32 requestPublicXPointArg,
         bytes32 requestPublicYPointArg)
     {
-        VanityLib.requireValidBicoinAddressPrefix(prefixArg);
+        requireValidBicoinAddressPrefix(prefixArg);
      
         //address poolArg = address(0x0);
         //bytes memory prefixArg = "1Anton";
@@ -50,7 +50,7 @@ contract VanityTask is Ownable {
         requestPublicXPoint = requestPublicXPointArg;
         requestPublicYPoint = requestPublicYPointArg;
         minAllowedLengthOfCommonPrefixForReward = prefix.length - 2;
-        complexity = VanityLib.complexityForBtcAddressPrefix(prefix, prefix.length);
+        complexity = complexityForBtcAddressPrefix(prefix, prefix.length);
     }
     
     function kill() onlyOwner() {
@@ -78,15 +78,15 @@ contract VanityTask is Ownable {
         //bytes32 answerPublicYPoint = hex"6da72eaa3180aef4a0213e5430a6eb11a3b88f04914c7037e4bf1f499b11f8d5";
         //bytes32 answerPrivateKey = bytes32(hex"eaf58f3ebd5ad92c16528b43ac41dadf267e50126568dcdd8a9196d469516659");
         
-        var (publicXPoint, publicYPoint) = VanityLib.addXY(
+        var (publicXPoint, publicYPoint) = addXY(
             uint(requestPublicXPoint), 
             uint(requestPublicYPoint), 
             uint(answerPublicXPoint), 
             uint(answerPublicYPoint)
         );
-        bytes32 btcAddress = VanityLib.createBtcAddress(publicXPoint, publicYPoint);
+        bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);
         
-        uint prefixLength = VanityLib.lengthOfCommonPrefix32(btcAddress, prefix);
+        uint prefixLength = lengthOfCommonPrefix32(btcAddress, prefix);
         return prefixLength;
     }
     
@@ -96,14 +96,14 @@ contract VanityTask is Ownable {
         // https://github.com/sontol/secp256k1evm
         // require(TODO!)
         
-        var (publicXPoint, publicYPoint) = VanityLib.addXY(
+        var (publicXPoint, publicYPoint) = addXY(
             uint(requestPublicXPoint),
             uint(requestPublicYPoint), 
             uint(answerPublicXPoint), 
             uint(answerPublicYPoint)
         );
-        bytes32 btcAddress = VanityLib.createBtcAddress(publicXPoint, publicYPoint);
-        uint prefixLength = VanityLib.lengthOfCommonPrefix32(btcAddress, prefix);
+        bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);
+        uint prefixLength = lengthOfCommonPrefix32(btcAddress, prefix);
         require(prefixLength >= minAllowedLengthOfCommonPrefixForReward);
         
         Answer memory answer = Answer(
@@ -112,7 +112,7 @@ contract VanityTask is Ownable {
             answerPublicYPoint, 
             answerPrivateKey, 
             btcAddress,
-            VanityLib.complexityForBtcAddressPrefix(prefix, prefixLength),
+            complexityForBtcAddressPrefix(prefix, prefixLength),
             false
         );
 

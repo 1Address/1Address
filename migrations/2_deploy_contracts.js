@@ -1,5 +1,5 @@
-var Registrator = artifacts.require("./Registrator.sol");
+var VanityPool = artifacts.require("./VanityPool.sol");
 
 module.exports = function(deployer) {
-    deployer.deploy(Registrator);
+    deployer.deploy(VanityPool);
 };

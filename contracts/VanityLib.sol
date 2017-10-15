@@ -1,11 +1,9 @@
 pragma solidity ^0.4.0;
 
-import './VanityTask.sol';
 
+contract VanityLib {
 
-library VanityLib {
-
-    function lengthOfCommonPrefix(bytes a, bytes b) constant returns(uint) {
+    function lengthOfCommonPrefix(bytes a, bytes b) public constant returns(uint) {
         uint len = (a.length <= b.length) ? a.length : b.length;
         for (uint i = 0; i < len; i++) {
             if (a[i] != b[i]) {
@@ -15,7 +13,7 @@ library VanityLib {
         return len;
     }
     
-    function lengthOfCommonPrefix32(bytes32 a, bytes b) constant returns(uint) {
+    function lengthOfCommonPrefix32(bytes32 a, bytes b) public constant returns(uint) {
         for (uint i = 0; i < b.length; i++) {
             if (a[i] != b[i]) {
                 return i;
@@ -24,7 +22,7 @@ library VanityLib {
         return b.length;
     }
     
-    function equalBytesToBytes(bytes a, bytes b) constant returns (bool) {
+    function equalBytesToBytes(bytes a, bytes b) public constant returns (bool) {
         if (a.length != b.length) {
             return false;
         }
@@ -36,7 +34,7 @@ library VanityLib {
         return true;
     }
     
-    function equalBytes32ToBytes(bytes32 a, bytes b) constant returns (bool) {
+    function equalBytes32ToBytes(bytes32 a, bytes b) public constant returns (bool) {
         for (uint i = 0; i < b.length; i++) {
             if (a[i] != b[i]) {
                 return false;
@@ -45,14 +43,14 @@ library VanityLib {
         return true;
     }
     
-    function bytesToBytes32(bytes source) constant returns (bytes32 result) {
+    function bytesToBytes32(bytes source) public constant returns(bytes32 result) {
         assembly {
             result := mload(add(source, 32))
         }
     }
 
     /* Converts given number to base58, limited by 32 symbols */
-    function toBase58Checked(uint256 _value, byte appCode) constant returns (bytes32) {
+    function toBase58Checked(uint256 _value, byte appCode) public constant returns(bytes32) {
         string memory letters = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
         bytes memory alphabet = bytes(letters);
         uint8 base = 58;
@@ -91,7 +89,7 @@ library VanityLib {
     }
 
     // Create BTC Address: https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses#How_to_create_Bitcoin_Address
-    function createBtcAddressHex(bytes32 publicXPoint, bytes32 publicYPoint) constant returns(bytes32) {
+    function createBtcAddressHex(bytes32 publicXPoint, bytes32 publicYPoint) public constant returns(bytes32) {
         bytes20 publicKeyPart = ripemd160(sha256(0x04, publicXPoint, publicYPoint));
         bytes32 publicKeyCheckCode = sha256(sha256(0x00, publicKeyPart));
         
@@ -111,12 +109,12 @@ library VanityLib {
         return bytesToBytes32(publicKey);
     }
     
-    function createBtcAddress(bytes32 publicXPoint, bytes32 publicYPoint) constant returns(bytes32) {
+    function createBtcAddress(bytes32 publicXPoint, bytes32 publicYPoint) public constant returns(bytes32) {
         return toBase58Checked(uint256(createBtcAddressHex(publicXPoint, publicYPoint)), "1");
     }
 
     // https://github.com/stonecoldpat/anonymousvoting/blob/master/LocalCrypto.sol
-    function invmod(uint a, uint p) internal constant returns (uint) {
+    function invmod(uint a, uint p) public constant returns (uint) {
         if (a == 0 || a == p || p == 0)
             return 0;
         if (a > p)
@@ -136,7 +134,7 @@ library VanityLib {
     }
     
     // https://github.com/stonecoldpat/anonymousvoting/blob/master/LocalCrypto.sol
-    function submod(uint a, uint b, uint m) returns (uint){
+    function submod(uint a, uint b, uint m) public constant returns (uint){
         uint a_nn;
 
         if (a > b) {
@@ -151,7 +149,7 @@ library VanityLib {
     // https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_addition
     // https://github.com/bellaj/Blockchain/blob/6bffb47afae6a2a70903a26d215484cf8ff03859/ecdsa_bitcoin.pdf
     // https://math.stackexchange.com/questions/2198139/elliptic-curve-formulas-for-point-addition
-    function addXY(uint x1, uint y1, uint x2, uint y2) returns(bytes32 x3, bytes32 y3) {
+    function addXY(uint x1, uint y1, uint x2, uint y2) public constant returns(bytes32 x3, bytes32 y3) {
         uint m = uint(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f);
         uint anti = invmod(submod(x2, x1, m), m);
         uint alpha = mulmod(submod(y2, y1, m), anti, m);
@@ -167,16 +165,43 @@ library VanityLib {
         //            );
     }
 
-    function complexityForBtcAddressPrefix(bytes prefix, uint length) constant returns(uint) {
+    // https://bitcoin.stackexchange.com/questions/48586
+    function complexityForBtcAddressPrefix(bytes prefix, uint length) public constant returns(uint) {
         require(prefix.length >= length);
         
-        //TODO: Implement more complex algo
-        // https://bitcoin.stackexchange.com/questions/48586/best-way-to-calculate-difficulty-of-generating-specific-vanity-address
-        
-        return 58 ** length; 
+        uint8[128] memory unbase58 = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+            255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 255, 255, 255, 255, 255, 255, 
+            255, 9, 10, 11, 12, 13, 14, 15, 16, 255, 17, 18, 19, 20, 21, 255, 
+            22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 255, 255, 255, 255, 255,
+            255, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 255, 44, 45, 46,
+            47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 255, 255, 255, 255, 255
+        ];
+
+        uint256 prefixValue = 0;
+        for (uint i = 0; i < prefix.length; i++) {
+            uint index = uint(prefix[i]);
+            require(index != 255);
+            prefixValue = prefixValue * 58 + unbase58[index];
+        }
+
+        uint256 total = 0;
+        uint256 prefixMin = prefixValue;
+        uint256 prefixMax = prefixValue;
+        while (prefixMax * 58 < (1 << 192)) {
+            prefixMin *= 58;
+            prefixMax *= 58;
+            uint maxAllowed = (1 << 192) - 1 - prefixMax;
+            prefixMax += (maxAllowed < 57) ? maxAllowed : 57;
+            total += prefixMax - prefixMin + 1;
+        }
+
+        return (1 << 192) / total;
     }
 
-    function requireValidBicoinAddressPrefix(bytes prefixArg) constant {
+    function requireValidBicoinAddressPrefix(bytes prefixArg) public constant {
         require(prefixArg.length >= 4);
         require(prefixArg[0] == "1" || prefixArg[0] == "3");
         
