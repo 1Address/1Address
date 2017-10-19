@@ -187,7 +187,7 @@ contract VanityLib {
             prefixValue = prefixValue * 58 + unbase58[index];
         }
 
-        uint256 total = 0;
+        uint256 total = 1;
         uint256 prefixMin = prefixValue;
         uint256 prefixMax = prefixValue;
         while (prefixMax * 58 < (1 << 192)) {

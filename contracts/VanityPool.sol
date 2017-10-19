@@ -19,10 +19,6 @@ contract VanityPool is Ownable {
         _;
     }
     
-    function VanityPool() {
-        tasks = new VanityTask[](0); // TODO: Check if needed
-    }
-    
     function () payable {
     }
     
