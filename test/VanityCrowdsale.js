@@ -19,11 +19,11 @@ const Token = artifacts.require('./VanityToken.sol');
 
 contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]) {
 
-    var startTime = latestTime() + duration.weeks(1);
-    var endTime = startTime + duration.weeks(10);
-    var beforeStartTime = startTime - duration.hours(1);
-    var beforeEndTime = endTime - duration.hours(1);
-    var afterEndTime = endTime + duration.seconds(1);
+    var startTime;
+    var endTime;
+    var beforeStartTime;
+    var beforeEndTime;
+    var afterEndTime;
 
     var crowdsale;
     var token;
@@ -35,11 +35,11 @@ contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]
             before(async function () {
                 await advanceBlock();
 
-                startTime += duration.years(1);
-                endTime += duration.years(1);
-                beforeStartTime += duration.years(1);
-                beforeEndTime += duration.years(1);
-                afterEndTime += duration.years(1);
+                startTime = latestTime() + duration.weeks(1);
+                endTime = startTime + duration.weeks(10);
+                beforeStartTime = startTime - duration.hours(1);
+                beforeEndTime = endTime - duration.hours(1);
+                afterEndTime = endTime + duration.seconds(1);
 
                 crowdsale = await Crowdsale.new(startTime, endTime, ownerWallet);
                 token = Token.at(await crowdsale.token.call());

@@ -181,21 +181,24 @@ contract VanityLib {
         ];
 
         uint256 prefixValue = 0;
-        for (uint i = 0; i < prefix.length; i++) {
+        for (uint i = 0; i < length; i++) {
             uint index = uint(prefix[i]);
             require(index != 255);
             prefixValue = prefixValue * 58 + unbase58[index];
         }
 
-        uint256 total = 1;
+        uint256 total = 0;
         uint256 prefixMin = prefixValue;
         uint256 prefixMax = prefixValue;
+        uint j = 0;
         while (prefixMax * 58 < (1 << 192)) {
             prefixMin *= 58;
             prefixMax *= 58;
             uint maxAllowed = (1 << 192) - 1 - prefixMax;
             prefixMax += (maxAllowed < 57) ? maxAllowed : 57;
-            total += prefixMax - prefixMin + 1;
+            if (length - 1 + j++ >= 31) {
+                total += prefixMax - prefixMin + 1;
+            }
         }
 
         return (1 << 192) / total;
