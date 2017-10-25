@@ -50,7 +50,7 @@ contract VanityTask is Ownable, VanityLib {
         requestPublicXPoint = requestPublicXPointArg;
         requestPublicYPoint = requestPublicYPointArg;
         minAllowedLengthOfCommonPrefixForReward = prefix.length - 2;
-        complexity = complexityForBtcAddressPrefix(prefix, prefix.length);
+        complexity = complexityForBtcAddressPrefix(prefix);
     }
     
     function kill() onlyOwner() {
@@ -112,7 +112,7 @@ contract VanityTask is Ownable, VanityLib {
             answerPublicYPoint, 
             answerPrivateKey, 
             btcAddress,
-            complexityForBtcAddressPrefix(prefix, prefixLength),
+            complexityForBtcAddressPrefixWithLength(prefix, prefixLength),
             false
         );
 

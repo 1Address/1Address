@@ -80,20 +80,20 @@ contract VanityCrowdsale is Ownable {
         Finalized();
     }
 
-    function distribute(uint offset, uint count) public onlyOwner {
-        require(count > 0 && offset + count <= participants.length);
+    function distribute(uint count) public onlyOwner {
+        require(count > 0 && distributedCount + count <= participants.length);
         require(finalized && !distributed);
 
-        for (uint i = offset; i < offset + count; i++) {
-            address participant = participants[i];
+        for (uint i = 0; i < count; i++) {
+            address participant = participants[distributedCount + i];
             require(registered[participant]);
             delete registered[participant];
 
             uint256 tokens = participant.balance * TOKEN_RATE;
             token.mint(participant, tokens);
             distributedTokens += tokens;
-            distributedCount++;
         }
+        distributedCount += count;
 
         if (distributedCount == participants.length) {
             uint256 ownerTokens = distributedTokens * OWNER_TOKENS_PERCENT / 100;

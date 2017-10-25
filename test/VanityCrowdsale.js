@@ -17,7 +17,7 @@ import EVMThrow from './helpers/EVMThrow';
 const Crowdsale = artifacts.require('./VanityCrowdsale.sol');
 const Token = artifacts.require('./VanityToken.sol');
 
-contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]) {
+contract('VanityCrowdsale', function([_, ownerWallet, wallet, wallet1, wallet2, wallet3, wallet4]) {
 
     var startTime;
     var endTime;
@@ -68,14 +68,37 @@ contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]
         })
 
         it("should be able to register", async function() {
-            (await crowdsale.registered.call(wallet1)).should.be.false;
-            await crowdsale.registerParticipant({from: wallet1});
-            (await crowdsale.registered.call(wallet1)).should.be.true;
+            (await crowdsale.registered.call(wallet)).should.be.false;
+            await crowdsale.registerParticipant({from: wallet});
+            (await crowdsale.registered.call(wallet)).should.be.true;
         })
 
         it("should not be able to register twice", async function() {
-            await crowdsale.registerParticipant({from: wallet2});
-            await crowdsale.registerParticipant({from: wallet2}).should.be.rejectedWith(EVMThrow);
+            await crowdsale.registerParticipant({from: wallet1});
+            await crowdsale.registerParticipant({from: wallet1}).should.be.rejectedWith(EVMThrow);
+        })
+
+        it("should be able to register by payment", async function() {
+            (await crowdsale.registered.call(wallet2)).should.be.false;
+            web3.eth.sendTransaction({from: wallet2, to: crowdsale.address, value: ether(2), gas: 4700000});
+            (await crowdsale.registered.call(wallet2)).should.be.true;
+        })
+
+        it("should not be any balance on the contract", async function() {
+            (await web3.eth.getBalance(crowdsale.address)).should.be.bignumber.equal(0);
+            web3.eth.sendTransaction({from: wallet3, to: crowdsale.address, value: ether(2), gas: 4700000});
+            (await web3.eth.getBalance(crowdsale.address)).should.be.bignumber.equal(0);
+        })
+
+        it("should return payments to participants", async function() {
+            const oldBalance = new BigNumber(await web3.eth.getBalance(wallet4));
+
+            const txid = web3.eth.sendTransaction({from: wallet4, to: crowdsale.address, value: ether(2), gas: 4700000});
+            var {cumulativeGasUsed} = web3.eth.getTransactionReceipt(txid);
+            cumulativeGasUsed = new BigNumber(cumulativeGasUsed);
+
+            const balance = await web3.eth.getBalance(wallet4);
+            balance.should.be.bignumber.equal(oldBalance.sub(cumulativeGasUsed)); // cumulativeGasUsed.mul(web3.eth.gasPrice)
         })
 
     })
@@ -110,13 +133,14 @@ contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]
         })
 
         it("should not be able to distribute by anyone", async function() {
-            const participants = await crowdsale.participantsCount.call();
-            await crowdsale.distribute(0, participants, {from: wallet1}).should.be.rejectedWith(EVMThrow);
-            await crowdsale.distribute(0, participants, {from: wallet2}).should.be.rejectedWith(EVMThrow);
-            await crowdsale.distribute(0, participants).should.be.rejectedWith(EVMThrow);
+            const participantsCount = await crowdsale.participantsCount.call();
+            await crowdsale.distribute(participantsCount, {from: wallet1}).should.be.rejectedWith(EVMThrow);
+            await crowdsale.distribute(participantsCount, {from: wallet2}).should.be.rejectedWith(EVMThrow);
+            await crowdsale.distribute(participantsCount).should.be.rejectedWith(EVMThrow);
         })
 
         it("should be able to finalize by owner", async function() {
+            (await crowdsale.finalized.call()).should.be.false;
             await crowdsale.finalize();
             (await crowdsale.finalized.call()).should.be.true;
         })
@@ -140,28 +164,26 @@ contract('VanityCrowdsale', function([_, ownerWallet, wallet1, wallet2, wallet3]
         })
 
         it("should not be able to distribute not by owner", async function() {
-            const participants = await crowdsale.participantsCount.call();
-            await crowdsale.distribute(0, participants, {from: wallet1}).should.be.rejectedWith(EVMThrow);
-            await crowdsale.distribute(0, participants, {from: wallet2}).should.be.rejectedWith(EVMThrow);
+            const participantsCount = await crowdsale.participantsCount.call();
+            await crowdsale.distribute(participantsCount, {from: wallet1}).should.be.rejectedWith(EVMThrow);
+            await crowdsale.distribute(participantsCount, {from: wallet2}).should.be.rejectedWith(EVMThrow);
         })
 
         it("should not be able to distribute for 0 or too many participants", async function() {
-            const participants = await crowdsale.participantsCount.call();
-            await crowdsale.distribute(0, 0).should.be.rejectedWith(EVMThrow);
-            await crowdsale.distribute(0, participants + 1).should.be.rejectedWith(EVMThrow);
+            const participantsCount = await crowdsale.participantsCount.call();
+            await crowdsale.distribute(0).should.be.rejectedWith(EVMThrow);
+            await crowdsale.distribute(participantsCount + 1).should.be.rejectedWith(EVMThrow);
         })
 
         it("should be able to distribute by owner", async function() {
             const participants = await crowdsale.participantsCount.call();
             const firstDistributed = 1;
 
-            await crowdsale.distribute(0, firstDistributed);
+            await crowdsale.distribute(firstDistributed);
             (await crowdsale.distributedCount.call()).should.be.bignumber.equal(firstDistributed);
             (await crowdsale.distributed.call()).should.be.false;
 
-            await crowdsale.distribute(0, participants - firstDistributed).should.be.rejectedWith(EVMThrow);
-
-            await crowdsale.distribute(firstDistributed, participants - firstDistributed);
+            await crowdsale.distribute(participants - firstDistributed);
             (await crowdsale.distributedCount.call()).should.be.bignumber.equal(participants);
             (await crowdsale.distributed.call()).should.be.true;
 

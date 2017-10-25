@@ -55,16 +55,28 @@ contract('VanityLib', async function([_, registratorAccount, customerAccount, cu
         (web3.toAscii(await vanityLib.createBtcAddress.call(xPoint, yPoint))).should.be.equal("16UwLL9Risc3QfPqBUvKofHmBQ7wMtjv");
     })
 
-    it.only("should test complexityForBtcAddressPrefix1", async function() {
-        (await vanityLib.complexityForBtcAddressPrefix.call(web3.fromAscii("1AAAAA"), 6)).should.be.bignumber.equal(259627881);
-    })
+    function makeIt(prefix, value) {
+        it("should test difficulty for " + prefix, async function() {
+            (await vanityLib.complexityForBtcAddressPrefix.call(web3.fromAscii(prefix))).should.be.bignumber.equal(value);
+        })
+    }
 
-    it("should test complexityForBtcAddressPrefix2", async function() {
-        //(await vanityLib.complexityForBtcAddressPrefix.call(web3.fromAscii("1QLbz8"), 6)).should.be.bignumber.equal(837596142);
-    })
+    /*makeIt('1AAAAA', 259627881);
+    makeIt('1QLbz6', 259627881);
+    makeIt('1QLbz7', 837596142);
+    makeIt('1QLbz8', 15318045009);
+    makeIt('1aaaaa', 15318045009);
+    makeIt('1zzzzz', 15318045009);
+    makeIt('111111', 1099511627776);
 
-    it("should test complexityForBtcAddressPrefix3", async function() {
-        //(await vanityLib.complexityForBtcAddressPrefix.call(web3.fromAscii("1aaaaa"), 6)).should.be.bignumber.equal(15318045009);
-    })
+    makeIt('1B', 22);
+    makeIt('1Bi', 1330);
+    makeIt('1Bit', 77178);
+    makeIt('1Bitc', 4476342);
+    makeIt('1Bitco', 259627881);
+    makeIt('1Bitcoi', 15058417127);
+    makeIt('1Bitcoin', 873388193410);
+    makeIt('1BitcoinEater', "573254251836560363813");
+    makeIt('1BitcoinEaterAddress', "1265736312036992302053249573170410");*/
 
 })

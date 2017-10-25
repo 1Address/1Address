@@ -165,8 +165,12 @@ contract VanityLib {
         //            );
     }
 
+    function complexityForBtcAddressPrefix(bytes prefix) public constant returns(uint) {
+        return complexityForBtcAddressPrefixWithLength(prefix, prefix.length);
+    }
+
     // https://bitcoin.stackexchange.com/questions/48586
-    function complexityForBtcAddressPrefix(bytes prefix, uint length) public constant returns(uint) {
+    function complexityForBtcAddressPrefixWithLength(bytes prefix, uint length) public constant returns(uint) {
         require(prefix.length >= length);
         
         uint8[128] memory unbase58 = [
@@ -180,25 +184,46 @@ contract VanityLib {
             47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 255, 255, 255, 255, 255
         ];
 
+        uint leadingOnes = 1;
+        for (uint j = 0; j < length && unbase58[uint(prefix[j])] == 0; j++) {
+            leadingOnes = j + 1;
+        }
+
         uint256 prefixValue = 0;
+        uint256 prefix1 = 1;
         for (uint i = 0; i < length; i++) {
             uint index = uint(prefix[i]);
             require(index != 255);
             prefixValue = prefixValue * 58 + unbase58[index];
+            prefix1 *= 58;
         }
 
+        uint256 top = (uint256(1) << (200 - 8*leadingOnes));
         uint256 total = 0;
         uint256 prefixMin = prefixValue;
-        uint256 prefixMax = prefixValue;
-        uint j = 0;
-        while (prefixMax * 58 < (1 << 192)) {
+        uint digits = 0;
+        uint256 diff = 0;
+        while (prefix1/58 < (1 << 192)) {
+            digits += 1;
+            prefix1 *= 58;
             prefixMin *= 58;
-            prefixMax *= 58;
-            uint maxAllowed = (1 << 192) - 1 - prefixMax;
-            prefixMax += (maxAllowed < 57) ? maxAllowed : 57;
-            if (length - 1 + j++ >= 31) {
-                total += prefixMax - prefixMin + 1;
+            prefixValue = prefixValue * 58 + 57;
+
+            diff = 0;
+            if (prefixValue >= top) {
+                diff += prefixValue - top;
             }
+            if (prefixMin < (top >> 8)) {
+                diff += (top >> 8) - prefixMin;
+            }
+
+            if (prefixValue >= (top >> 8)) {
+                total += (58 ** digits) - diff;
+            }
+        }
+
+        if (prefixValue == 0) {
+            total = (58 ** digits) - diff;
         }
 
         return (1 << 192) / total;
