@@ -93,12 +93,12 @@ contract('VanityCrowdsale', function([_, ownerWallet, wallet, wallet1, wallet2, 
         it("should return payments to participants", async function() {
             const oldBalance = new BigNumber(await web3.eth.getBalance(wallet4));
 
-            const txid = web3.eth.sendTransaction({from: wallet4, to: crowdsale.address, value: ether(2), gas: 4700000});
+            const txid = web3.eth.sendTransaction({from: wallet4, to: crowdsale.address, value: ether(2), gas: 4700000, gasPrice: web3.eth.gasPrice});
             var {cumulativeGasUsed} = web3.eth.getTransactionReceipt(txid);
             cumulativeGasUsed = new BigNumber(cumulativeGasUsed);
 
             const balance = await web3.eth.getBalance(wallet4);
-            balance.should.be.bignumber.equal(oldBalance.sub(cumulativeGasUsed)); // cumulativeGasUsed.mul(web3.eth.gasPrice)
+            balance.should.be.bignumber.equal(oldBalance.sub(cumulativeGasUsed.mul(web3.eth.gasPrice)));
         })
 
     })
