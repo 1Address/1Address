@@ -30,8 +30,8 @@ contract VanityCrowdsale is Ownable {
 
     event Finalized();
     event Distributed();
-
-    // Constructor and setters
+    
+    // Constructor and accessors
 
     function VanityCrowdsale(uint256 _startTime, uint256 _endTime, address _ownerWallet) public {
         startTime = _startTime;
@@ -86,9 +86,6 @@ contract VanityCrowdsale is Ownable {
 
         for (uint i = 0; i < count; i++) {
             address participant = participants[distributedCount + i];
-            require(registered[participant]);
-            delete registered[participant];
-
             uint256 tokens = participant.balance * TOKEN_RATE;
             token.mint(participant, tokens);
             distributedTokens += tokens;
