@@ -1,6 +1,6 @@
 # VanityPool
 
-Example of ICOSearch service based on BASE architecture
+Smart contract for automated BTC address generation pool
 
 # Installation
 
