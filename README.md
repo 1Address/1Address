@@ -1,4 +1,4 @@
-# ICOSearch-BASE-Example
+# VanityPool
 
 Example of ICOSearch service based on BASE architecture
 
