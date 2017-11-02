@@ -184,10 +184,7 @@ contract VanityLib {
             47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 255, 255, 255, 255, 255
         ];
 
-        uint leadingOnes = 1;
-        for (uint j = 0; j < length && unbase58[uint(prefix[j])] == 0; j++) {
-            leadingOnes = j + 1;
-        }
+        uint leadingOnes = countBtcAddressLeadingOnes(prefix, length);
 
         uint256 prefixValue = 0;
         uint256 prefix1 = 1;
@@ -201,10 +198,8 @@ contract VanityLib {
         uint256 top = (uint256(1) << (200 - 8*leadingOnes));
         uint256 total = 0;
         uint256 prefixMin = prefixValue;
-        uint digits = 0;
         uint256 diff = 0;
-        while (prefix1/58 < (1 << 192)) {
-            digits += 1;
+        for (uint digits = 1; prefix1/58 < (1 << 192); digits++) {
             prefix1 *= 58;
             prefixMin *= 58;
             prefixValue = prefixValue * 58 + 57;
@@ -216,17 +211,25 @@ contract VanityLib {
             if (prefixMin < (top >> 8)) {
                 diff += (top >> 8) - prefixMin;
             }
-
-            if (prefixValue >= (top >> 8)) {
+            
+            if ((58 ** digits) >= diff) {
                 total += (58 ** digits) - diff;
             }
         }
 
-        if (prefixValue == 0) {
-            total = (58 ** digits) - diff;
+        if (prefixMin == 0) { // if prefix is contains only ones: 111111
+            total = (58 ** (digits - 1)) - diff;
         }
 
         return (1 << 192) / total;
+    }
+
+    function countBtcAddressLeadingOnes(bytes prefix, uint length) public constant returns(uint) {
+        uint leadingOnes = 1;
+        for (uint j = 0; j < length && prefix[j] == 49; j++) {
+            leadingOnes = j + 1;
+        }
+        return leadingOnes;
     }
 
     function requireValidBicoinAddressPrefix(bytes prefixArg) public constant {
