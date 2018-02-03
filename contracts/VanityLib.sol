@@ -130,8 +130,8 @@ contract VanityLib {
     }
     
     // https://github.com/stonecoldpat/anonymousvoting/blob/master/LocalCrypto.sol
-    function submod(uint a, uint b, uint m) public pure returns (uint) {
-        return addmod(a, m - b, m);
+    function submod(uint a, uint b, uint p) public pure returns (uint) {
+        return addmod(a, p - b, p);
     }
 
     // https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_addition
