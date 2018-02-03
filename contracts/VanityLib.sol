@@ -1,7 +1,8 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.18;
 
 
 contract VanityLib {
+    uint constant m = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f;
 
     function lengthOfCommonPrefix(bytes a, bytes b) public pure returns(uint) {
         uint len = (a.length <= b.length) ? a.length : b.length;
@@ -115,11 +116,7 @@ contract VanityLib {
 
     // https://github.com/stonecoldpat/anonymousvoting/blob/master/LocalCrypto.sol
     function invmod(uint256 a, uint256 p) public pure returns (uint256) {
-        if (a == 0 || a == p || p == 0)
-            return 0;
-        if (a > p)
-            a = a % p;
-        int t1;
+        int t1 = 0;
         int t2 = 1;
         uint r1 = p;
         uint r2 = a;
@@ -128,33 +125,23 @@ contract VanityLib {
             q = r1 / r2;
             (t1, t2, r1, r2) = (t2, t1 - int(q) * t2, r2, r1 - q * r2);
         }
-        if (t1 < 0)
-            return (p - uint(-t1));
-        return uint(t1);
+
+        return t1 < 0 ? p - uint(-t1) : uint(t1);
     }
     
     // https://github.com/stonecoldpat/anonymousvoting/blob/master/LocalCrypto.sol
-    function submod(uint a, uint b, uint m) public pure returns (uint){
-        uint a_nn;
-
-        if (a > b) {
-            a_nn = a;
-        } else {
-            a_nn = a + m;
-        }
-
-        return addmod(a_nn - b, 0, m);
+    function submod(uint a, uint b, uint m) public pure returns (uint) {
+        return addmod(a, m - b, m);
     }
-    
+
     // https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_addition
     // https://github.com/bellaj/Blockchain/blob/6bffb47afae6a2a70903a26d215484cf8ff03859/ecdsa_bitcoin.pdf
     // https://math.stackexchange.com/questions/2198139/elliptic-curve-formulas-for-point-addition
-    function addXY(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure returns(uint256 x3, uint256 y3) {
-        uint256 m = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f;
-        uint256 anti = invmod(submod(x2, x1, m), m);
-        uint256 alpha = mulmod(submod(y2, y1, m), anti, m);
-        x3 = submod(submod(mulmod(alpha, alpha, m), x2, m), x1, m);
-        y3 = submod(mulmod(alpha, submod(x1, x3, m), m), y1, m);
+    function addXY(uint x1, uint y1, uint x2, uint y2) public pure returns(uint x3, uint y3) {
+        uint anti = invmod(submod(x1, x2, m), m);
+        uint alpha = mulmod(submod(y1, y2, m), anti, m);
+        x3 = submod(submod(mulmod(alpha, alpha, m), x1, m), x2, m);
+        y3 = submod(mulmod(alpha, submod(x2, x3, m), m), y2, m);
         
         // x3 = bytes32(mul_mod(uint(x3), uint(y3), m)); == 1!!!!
         
@@ -163,21 +150,29 @@ contract VanityLib {
         // y3 = mulmod(y1, y2, m);
     }
 
-    function mulXY(uint256 x1, uint256 y1, uint256 privateKey) public pure returns(uint256 x3, uint256 y3) {
+    function doubleXY(uint x1, uint y1) public pure returns(uint x2, uint y2) {
+        uint anti = invmod(addmod(y1, y1, m), m);
+        uint alpha = mulmod(addmod(addmod(mulmod(x1, x1, m), mulmod(x1, x1, m), m), mulmod(x1, x1, m), m), anti, m);
+        x2 = submod(mulmod(alpha, alpha, m), addmod(x1, x1, m), m);
+        y2 = submod(mulmod(alpha, submod(x1, x2, m), m), y1, m);
+    }
+
+    function mulXY(uint x1, uint y1, uint privateKey) public pure returns(uint x2, uint y2) {
+        bool addition = false;
         for (uint i = 0; i < 256; i++) {
             if (((privateKey >> i) & 1) == 1) {
-                if (x3 == 0 && y3 == 0) {
-                    (x3,y3) = (x1,y1);
-                }
-                else {
-                    (x3,y3) = addXY(x3,y3, x1,y1);
+                if (addition) {
+                    (x2, y2) = addXY(x1, y1, x2, y2);
+                } else {
+                    (x2, y2) = (x1, y1);
+                    addition = true;
                 }
             }
-            (x1,y1) = addXY(x1,y1, x1,y1);
+            (x1,y1) = doubleXY(x1, y1);
         }
     }
 
-    function bitcoinPublicKey(uint256 privateKey) public pure returns(uint256 x, uint256 y) {
+    function bitcoinPublicKey(uint256 privateKey) public pure returns(uint, uint) {
         uint256 gx = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798;
         uint256 gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8;
         return mulXY(gx, gy, privateKey);

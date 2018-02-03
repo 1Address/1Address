@@ -1,6 +1,6 @@
 pragma solidity ^0.4.0;
 
-import "zeppelin-solidity/contracts/token/ERC20.sol";
+import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import './VanityLib.sol';
 import './BitcoinTask.sol';
