@@ -2,9 +2,10 @@ pragma solidity ^0.4.0;
 
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
+import "zeppelin-solidity/contracts/token/ERC827/ERC827Token.sol";
 
 
-contract VanityToken is MintableToken, PausableToken {
+contract VanityToken is MintableToken, PausableToken, ERC827Token {
 
     // Metadata
     string public constant symbol = "VIP";

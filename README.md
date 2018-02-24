@@ -1,4 +1,4 @@
-# VanityPool
+# VipCoin
 
 Smart contract for automated BTC address generation pool
 

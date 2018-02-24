@@ -22,6 +22,15 @@ contract VanityLib {
         }
         return b.length;
     }
+
+    function lengthOfCommonPrefix3232(bytes32 a, bytes32 b) public pure returns(uint) {
+        for (uint i = 0; i < 32; i++) {
+            if (a[i] != b[i]) {
+                return i;
+            }
+        }
+        return 0;
+    }
     
     function equalBytesToBytes(bytes a, bytes b) public pure returns (bool) {
         if (a.length != b.length) {

@@ -3,7 +3,7 @@ pragma solidity ^0.4.0;
 import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import './VanityLib.sol';
-import './VanityPool.sol';
+import './TaskRegister.sol';
 
 
 contract BitcoinTask is Ownable, VanityLib {
@@ -12,14 +12,14 @@ contract BitcoinTask is Ownable, VanityLib {
 
     ERC20 public token;
     bytes public prefix;
-    VanityPool public pool;
+    TaskRegister public pool;
     uint256 public requestPublicXPoint;
     uint256 public requestPublicYPoint;
     uint256 public answerPrivateKey;
     
     function BitcoinTask(
         ERC20 tokenArg,
-        VanityPool poolArg,
+        TaskRegister poolArg,
         bytes prefixArg,
         uint256 requestPublicXPointArg,
         uint256 requestPublicYPointArg) public
@@ -72,7 +72,7 @@ contract BitcoinTask is Ownable, VanityLib {
         
         answerPrivateKey = _answerPrivateKey;
         token.transfer(msg.sender, token.balanceOf(this));
-        pool.completeBitcoinTask(this);
+        //pool.completeBitcoinTask(this);
         
         return true;
     }
