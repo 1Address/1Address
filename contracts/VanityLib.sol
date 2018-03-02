@@ -25,7 +25,7 @@ contract VanityLib {
 
     function lengthOfCommonPrefix3232(bytes32 a, bytes32 b) public pure returns(uint) {
         for (uint i = 0; i < 32; i++) {
-            if (a[i] != b[i]) {
+            if (a[i] != b[i] || a[i] == 0) {
                 return i;
             }
         }

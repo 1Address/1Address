@@ -18,7 +18,7 @@ var Upgradable = artifacts.require("./impl/UpgradableImpl.sol");
 
 contract('Upgradable', async function([_, registratorAccount, customerAccount, customerWallet1, customerWallet2, customerWallet3]) {
 
-    it.only('1', async function() {
+    it('should work fine', async function() {
         let oldContract = await Upgradable.new(0);
         {
             let state = await oldContract.upgradableState.call();

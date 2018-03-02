@@ -1,5 +1,4 @@
 pragma solidity ^0.4.0;
-pragma experimental ABIEncoderV2;
 
 import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -30,11 +29,11 @@ contract TaskRegister is Upgradable, VanityLib {
     ERC20 public token;
     uint256 public nextTaskId = 1;
     
-    Task[] public tasks;
-    Task[] public completedTasks;
-    mapping(uint => uint) indexOfTask; // Starting from 1
-    event TaskCreated(Task task);
-    event TaskSolved(Task task);
+    Task[] tasks;
+    Task[] completedTasks;
+    mapping(uint => uint) indexOfTaskId; // Starting from 1
+    event TaskCreated(uint indexed taskId);
+    event TaskSolved(uint indexed taskId);
 
     function TaskRegister(address _ec, address _token, address _prevVersion) public Upgradable(_prevVersion) {
         ec = EC(_ec);
@@ -53,7 +52,7 @@ contract TaskRegister is Upgradable, VanityLib {
         //         task.answerPrivateKey
         //     ) = prevVersion.tasks(i);
         //     tasks.push(task);
-        //     indexOfTask[task.taskId] = tasks.length;
+        //     indexOfTaskId[task.taskId] = tasks.length;
         // }
     }
 
@@ -61,8 +60,8 @@ contract TaskRegister is Upgradable, VanityLib {
         return tasks.length;
     }
 
-    function safeIndexOfTask(uint taskId) public constant returns(uint) {
-        uint index = indexOfTask[taskId];
+    function safeIndexOfTaskId(uint taskId) public constant returns(uint) {
+        uint index = indexOfTaskId[taskId];
         require(index > 0);
         return index - 1;
     }
@@ -91,13 +90,13 @@ contract TaskRegister is Upgradable, VanityLib {
             answerPrivateKey: 0
         });
         tasks.push(task);
-        indexOfTask[nextTaskId] = tasks.length; // incremented to avoid 0 index
-        TaskCreated(task);
+        indexOfTaskId[nextTaskId] = tasks.length; // incremented to avoid 0 index
+        TaskCreated(nextTaskId);
         nextTaskId++;
     }
     
     function solveTask(uint taskId, uint256 answerPrivateKey) public isLastestVersion {
-        uint taskIndex = safeIndexOfTask(taskId);
+        uint taskIndex = safeIndexOfTaskId(taskId);
         Task storage task = tasks[taskIndex];
 
         // Require private key to be part of address to prevent front-running attack
@@ -106,15 +105,19 @@ contract TaskRegister is Upgradable, VanityLib {
         for (uint i = 0; i < 16; i++) {
             require(answerPrivateKeyBytes[i] == senderAddressBytes[i]);
         }
-        
+
         if (task.taskType == TaskType.BITCOIN_ADDRESS_PREFIX) {
             var (answerPublicXPoint, answerPublicYPoint) = ec.publicKey(answerPrivateKey);
-            var (publicXPoint, publicYPoint) = ec._jAdd(
-                uint(task.requestPublicXPoint),
-                uint(task.requestPublicYPoint), 
-                uint(answerPublicXPoint), 
-                uint(answerPublicYPoint)
+            var (publicXPoint, publicYPoint) = addXY(//ec._jAdd(
+                task.requestPublicXPoint,
+                task.requestPublicYPoint,
+                answerPublicXPoint,
+                answerPublicYPoint
             );
+            uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
+            require(mulmod(publicYPoint, publicYPoint,m) ==
+                    addmod(mulmod(publicXPoint, mulmod(publicXPoint, publicXPoint, m), m), 7, m));
+
             bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);
             uint prefixLength = lengthOfCommonPrefix3232(btcAddress, task.data);
             require(prefixLength == task.dataLength);
@@ -122,15 +125,19 @@ contract TaskRegister is Upgradable, VanityLib {
         }
 
         completeTask(taskId, taskIndex);
-        TaskSolved(task);
+        TaskSolved(taskId);
     }
 
     function completeTask(uint taskId, uint index) internal isLastestVersion {
         completedTasks.push(tasks[index]);
-        tasks[index] = tasks[tasks.length - 1];
+        if (tasks.length > 1) {
+            tasks[index] = tasks[tasks.length - 1];
+        }
         tasks.length -= 1;
 
-        delete indexOfTask[taskId];
-        indexOfTask[tasks[index].taskId] = index;
+        delete indexOfTaskId[taskId];
+        if (tasks.length > 0) {
+            indexOfTaskId[tasks[index].taskId] = index + 1;
+        }
     }
 }
