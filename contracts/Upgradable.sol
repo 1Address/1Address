@@ -3,6 +3,13 @@ pragma solidity ^0.4.0;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
+contract IUpgradable {
+
+    function startUpgrade() public;
+    function endUpgrade() public;
+
+}
+
 contract Upgradable is Ownable {
 
     struct UpgradableState {
@@ -30,10 +37,10 @@ contract Upgradable is Ownable {
 
     function Upgradable(address _prevVersion) public {
         if (_prevVersion != address(0)) {
-            require(msg.sender == Upgradable(_prevVersion).owner());
+            require(msg.sender == Ownable(_prevVersion).owner());
             upgradableState.isUpgrading = true;
             upgradableState.prevVersion = _prevVersion;
-            Upgradable(_prevVersion).startUpgrade();
+            IUpgradable(_prevVersion).startUpgrade();
         } else {
             Initialized(_prevVersion);
         }

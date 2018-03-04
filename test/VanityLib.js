@@ -68,7 +68,7 @@ contract('VanityLib', async function([_, registratorAccount, customerAccount, cu
 
     it("should create BTC public key from private key", async function() {
         const privateKey = "0x18e14a7b6a307f426a94f8114701e7c8e774e7f9a47e2c2035db29a206321725"; //"0xeaf58f3ebd5ad92c16528b43ac41dadf267e50126568dcdd8a9196d469516659";
-        const [publicX,publicY] = await vanityLib.bitcoinPublicKey.call(privateKey);
+        const [publicX,publicY] = await vanityLib.bitcoinPublicKey.call(privateKey, {gas: 7000000});
         console.log(web3.toHex(publicX) + '\n' + web3.toHex(publicY));
         web3.toHex(publicX).should.be.equal("0xbef8aa5dc83f75aff0e42f10b923e01e76d2f1d830e1a89dfe8621975a6226fe");
         web3.toHex(publicY).should.be.equal("0x6da72eaa3180aef4a0213e5430a6eb11a3b88f04914c7037e4bf1f499b11f8d5");

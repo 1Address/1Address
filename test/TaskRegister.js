@@ -34,7 +34,7 @@ contract('TaskRegister', async function([_, wallet1, wallet2, wallet3]) {
         taskRegister = await TaskRegister.new(ec.address, token.address, 0);
     });
 
-    it.only("should", async function() {
+    it("should", async function() {
         wallet1.should.be.equal("0xf17f52151ebef6c7334fad080c5704d77216b732");
 
         //
@@ -45,7 +45,7 @@ contract('TaskRegister', async function([_, wallet1, wallet2, wallet3]) {
         // 7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59
         //
 
-        await taskRegister.createBitcoinAddressPrefixTask("1Anton", "0xaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d", "0x7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59");
+        await taskRegister.createBitcoinAddressPrefixTask("1Anton", 0, "0xaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d", "0x7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59");
 
         //
         // $ ./vanitygen         -P 04af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59 -Z f17f52151ebef6c7334fad080c5704d7 1Anton

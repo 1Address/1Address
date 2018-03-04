@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # We define 10 accounts with balance 1M ether, needed for high-value tests.
-ganache-cli --port 9545 --gasLimit 5000000 \
+ganache-cli --port 9545 --gasLimit 8000000 \
   --account="0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3,1000000000000000000000000"  \
   --account="0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f,1000000000000000000000000"  \
   --account="0x0dbbe8e4ae425a6d2687f1a7e3ba17bc98c673636790f1b8ad91193c05875ef1,1000000000000000000000000"  \
