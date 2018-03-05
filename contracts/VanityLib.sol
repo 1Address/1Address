@@ -255,7 +255,7 @@ contract VanityLib {
     }
 
     function requireValidBicoinAddressPrefix(bytes prefixArg) public pure {
-        require(prefixArg.length >= 4);
+        require(prefixArg.length >= 5);
         require(prefixArg[0] == "1" || prefixArg[0] == "3");
         
         for (uint i = 0; i < prefixArg.length; i++) {

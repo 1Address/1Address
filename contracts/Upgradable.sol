@@ -1,6 +1,6 @@
 pragma solidity ^0.4.0;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../node_modules/zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 contract IUpgradable {
@@ -48,6 +48,8 @@ contract Upgradable is Ownable {
 
     function startUpgrade() public onlyOwnerOrigin {
         require(msg.sender != owner);
+        require(!upgradableState.isUpgrading);
+        require(upgradableState.nextVersion == 0);
         upgradableState.isUpgrading = true;
         upgradableState.nextVersion = msg.sender;
         Upgrading(msg.sender);
@@ -56,8 +58,10 @@ contract Upgradable is Ownable {
     //function upgrade(uint index, uint size) public onlyOwner {}
 
     function endUpgrade() public onlyOwnerOrigin {
+        require(upgradableState.isUpgrading);
         upgradableState.isUpgrading = false;
         if (msg.sender != owner) {
+            require(upgradableState.nextVersion == msg.sender);
             Upgraded(upgradableState.nextVersion);
         } 
         else  {
