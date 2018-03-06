@@ -451,6 +451,7 @@ contract TaskRegister is Upgradable, VanityLib {
     mapping(uint256 => uint) public indexOfTaskId; // Starting from 1
     event TaskCreated(uint256 indexed taskId);
     event TaskSolved(uint256 indexed taskId);
+    event TaskPayed(uint256 indexed taskId);
 
     function TaskRegister(address _ec, address _token, address _prevVersion) public Upgradable(_prevVersion) {
         ec = IEC(_ec);
@@ -521,10 +522,12 @@ contract TaskRegister is Upgradable, VanityLib {
     }
 
     function payForTask(uint256 taskId, uint256 reward) public isLastestVersion {
+        require(reward > 0);
         uint index = safeIndexOfTaskId(taskId);
         token.transferFrom(msg.sender, this, reward);
         tasks[index].reward += reward;
         totalReward += reward;
+        TaskPayed(taskId);
     }
 
     function safeIndexOfTaskId(uint taskId) public constant returns(uint) {
@@ -536,6 +539,7 @@ contract TaskRegister is Upgradable, VanityLib {
     function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
         require(prefix.length > 5);
         require(prefix[0] == "1");
+        require(prefix[1] != "1"); // Do not support multiple 1s yet
         requireValidBicoinAddressPrefix(prefix);
         if (reward > 0) {
             token.transferFrom(msg.sender, this, reward);
