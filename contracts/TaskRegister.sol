@@ -486,7 +486,7 @@ contract TaskRegister is Upgradable, VanityLib {
                 ,//tasks[j].requestPublicYPoint,
                  //tasks[j].answerPrivateKey
             ) = TaskRegister(upgradableState.prevVersion).tasks(j);
-            indexOfTaskId[tasks[j].taskId] = j;
+            indexOfTaskId[tasks[j].taskId] = j + 1;
         }
 
         for (uint k = index; k < index + size && k < tasksCount; k++) {
