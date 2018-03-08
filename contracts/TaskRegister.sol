@@ -525,14 +525,10 @@ contract TaskRegister is Upgradable, VanityLib {
         return completedTasks.length;
     }
 
-    function payForTask(uint256 taskId, uint256 reward) public {
-        payForTaskCreator(taskId, msg.sender, reward);
-    }
-
-    function payForTaskCreator(uint256 taskId, address creator, uint256 reward) public isLastestVersion {
+    function payForTask(uint256 taskId, uint256 reward) public isLastestVersion {
         require(reward > 0);
         uint index = safeIndexOfTaskId(taskId);
-        token.transferFrom(creator, this, reward);
+        token.transferFrom(tx.origin, this, reward);
         tasks[index].reward += reward;
         totalReward += reward;
         TaskPayed(taskId);
@@ -544,18 +540,14 @@ contract TaskRegister is Upgradable, VanityLib {
         return index - 1;
     }
     
-    function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public {
-        createBitcoinAddressPrefixTaskCreator(prefix, msg.sender, reward, requestPublicXPoint, requestPublicYPoint);
-    }
-
-    function createBitcoinAddressPrefixTaskCreator(bytes prefix, address creator, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
+    function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
         require(prefix.length > 5);
         require(prefix[0] == "1");
         require(prefix[1] != "1"); // Do not support multiple 1s yet
         requireValidBicoinAddressPrefix(prefix);
         isValidPublicKey(requestPublicXPoint, requestPublicYPoint);
         if (reward > 0) {
-            token.transferFrom(creator, this, reward);
+            token.transferFrom(tx.origin, this, reward);
         }
 
         bytes32 data;
@@ -566,7 +558,7 @@ contract TaskRegister is Upgradable, VanityLib {
         Task memory task = Task({
             taskType: TaskType.BITCOIN_ADDRESS_PREFIX,
             taskId: nextTaskId,
-            creator: creator,
+            creator: tx.origin,
             reward: reward,
             data: data,
             dataLength: prefix.length,
