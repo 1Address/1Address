@@ -265,4 +265,8 @@ contract VanityLib {
         }
     }
 
+    function isValidPublicKey(uint256 x, uint256 y) public pure returns(bool) {
+        return (mulmod(y, y, m) == addmod(mulmod(x, mulmod(x, x, m), m), 7, m));
+    }
+
 }

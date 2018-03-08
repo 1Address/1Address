@@ -327,6 +327,10 @@ contract VanityLib {
         }
     }
 
+    function isValidPublicKey(uint256 x, uint256 y) public pure returns(bool) {
+        return (mulmod(y, y, m) == addmod(mulmod(x, mulmod(x, x, m), m), 7, m));
+    }
+
 }
 
 contract IUpgradable {
@@ -521,10 +525,14 @@ contract TaskRegister is Upgradable, VanityLib {
         return completedTasks.length;
     }
 
-    function payForTask(uint256 taskId, uint256 reward) public isLastestVersion {
+    function payForTask(uint256 taskId, uint256 reward) public {
+        payForTaskCreator(taskId, msg.sender, reward);
+    }
+
+    function payForTaskCreator(uint256 taskId, address creator, uint256 reward) public isLastestVersion {
         require(reward > 0);
         uint index = safeIndexOfTaskId(taskId);
-        token.transferFrom(msg.sender, this, reward);
+        token.transferFrom(creator, this, reward);
         tasks[index].reward += reward;
         totalReward += reward;
         TaskPayed(taskId);
@@ -536,19 +544,19 @@ contract TaskRegister is Upgradable, VanityLib {
         return index - 1;
     }
     
-    function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
+    function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public {
+        createBitcoinAddressPrefixTaskCreator(prefix, msg.sender, reward, requestPublicXPoint, requestPublicYPoint);
+    }
+
+    function createBitcoinAddressPrefixTaskCreator(bytes prefix, address creator, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
         require(prefix.length > 5);
         require(prefix[0] == "1");
         require(prefix[1] != "1"); // Do not support multiple 1s yet
         requireValidBicoinAddressPrefix(prefix);
+        isValidPublicKey(requestPublicXPoint, requestPublicYPoint);
         if (reward > 0) {
-            token.transferFrom(msg.sender, this, reward);
+            token.transferFrom(creator, this, reward);
         }
-
-        // (y^2 == x^3 + 7) mod m
-        uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
-        require(mulmod(requestPublicYPoint, requestPublicYPoint,m) ==
-                addmod(mulmod(requestPublicXPoint, mulmod(requestPublicXPoint, requestPublicXPoint, m), m), 7, m));
 
         bytes32 data;
         assembly {
@@ -558,7 +566,7 @@ contract TaskRegister is Upgradable, VanityLib {
         Task memory task = Task({
             taskType: TaskType.BITCOIN_ADDRESS_PREFIX,
             taskId: nextTaskId,
-            creator: msg.sender,
+            creator: creator,
             reward: reward,
             data: data,
             dataLength: prefix.length,
@@ -599,14 +607,12 @@ contract TaskRegister is Upgradable, VanityLib {
                 1
             );
             
-            // (y^2 == x^3 + 7) mod m
             uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
             z = ec._inverse(z);
             publicXPoint = mulmod(publicXPoint, z, m);
             publicYPoint = mulmod(publicYPoint, z, m);
-            require(mulmod(publicYPoint, publicYPoint,m) ==
-                    addmod(mulmod(publicXPoint, mulmod(publicXPoint, publicXPoint, m), m), 7, m));
-
+            isValidPublicKey(publicXPoint, publicYPoint);
+            
             bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);
             uint prefixLength = lengthOfCommonPrefix3232(btcAddress, task.data);
             require(prefixLength == task.dataLength);
