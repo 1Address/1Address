@@ -316,15 +316,25 @@ contract VanityLib {
         return leadingOnes;
     }
 
-    function requireValidBicoinAddressPrefix(bytes prefixArg) public pure {
-        require(prefixArg.length >= 5);
-        require(prefixArg[0] == "1" || prefixArg[0] == "3");
+    function isValidBicoinAddressPrefix(bytes prefixArg) public pure returns(bool) {
+        if (prefixArg.length < 5) {
+            return false;
+        }
+        if (prefixArg[0] != "1" && prefixArg[0] != "3") {
+            return false;
+        }
         
         for (uint i = 0; i < prefixArg.length; i++) {
             byte ch = prefixArg[i];
-            require(ch != "0" && ch != "O" && ch != "I" && ch != "l");
-            require((ch >= "1" && ch <= "9") || (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z"));
+            if (ch == "0" || ch == "O" || ch == "I" || ch == "l") {
+                return false;
+            }
+            if (!((ch >= "1" && ch <= "9") || (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z"))) {
+                return false;
+            }
         }
+
+        return true;
     }
 
     function isValidPublicKey(uint256 x, uint256 y) public pure returns(bool) {
@@ -544,8 +554,8 @@ contract TaskRegister is Upgradable, VanityLib {
         require(prefix.length > 5);
         require(prefix[0] == "1");
         require(prefix[1] != "1"); // Do not support multiple 1s yet
-        requireValidBicoinAddressPrefix(prefix);
-        isValidPublicKey(requestPublicXPoint, requestPublicYPoint);
+        require(isValidBicoinAddressPrefix(prefix));
+        require(isValidPublicKey(requestPublicXPoint, requestPublicYPoint));
         if (reward > 0) {
             token.transferFrom(tx.origin, this, reward);
         }
@@ -598,16 +608,17 @@ contract TaskRegister is Upgradable, VanityLib {
                 answerPublicYPoint,
                 1
             );
-            
+
             uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
             z = ec._inverse(z);
             publicXPoint = mulmod(publicXPoint, z, m);
             publicYPoint = mulmod(publicYPoint, z, m);
-            isValidPublicKey(publicXPoint, publicYPoint);
+            require(isValidPublicKey(publicXPoint, publicYPoint));
             
             bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);
             uint prefixLength = lengthOfCommonPrefix3232(btcAddress, task.data);
             require(prefixLength == task.dataLength);
+            
             task.answerPrivateKey = answerPrivateKey;
         }
 
@@ -620,13 +631,12 @@ contract TaskRegister is Upgradable, VanityLib {
 
     function completeTask(uint taskId, uint index) internal {
         completedTasks.push(tasks[index]);
-        tasks[index] = tasks[tasks.length - 1];
-        tasks.length -= 1;
-
-        delete indexOfTaskId[taskId];
-        if (tasks.length > 0) {
+        if (index < tasks.length - 1) { // if not latest
+            tasks[index] = tasks[tasks.length - 1];
             indexOfTaskId[tasks[index].taskId] = index + 1;
         }
+        tasks.length -= 1;
+        delete indexOfTaskId[taskId];
     }
 
     function recoverLost(ERC20Basic _token, address loser) public onlyOwner {

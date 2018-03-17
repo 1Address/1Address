@@ -254,15 +254,25 @@ contract VanityLib {
         return leadingOnes;
     }
 
-    function requireValidBicoinAddressPrefix(bytes prefixArg) public pure {
-        require(prefixArg.length >= 5);
-        require(prefixArg[0] == "1" || prefixArg[0] == "3");
+    function isValidBicoinAddressPrefix(bytes prefixArg) public pure returns(bool) {
+        if (prefixArg.length < 5) {
+            return false;
+        }
+        if (prefixArg[0] != "1" && prefixArg[0] != "3") {
+            return false;
+        }
         
         for (uint i = 0; i < prefixArg.length; i++) {
             byte ch = prefixArg[i];
-            require(ch != "0" && ch != "O" && ch != "I" && ch != "l");
-            require((ch >= "1" && ch <= "9") || (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z"));
+            if (ch == "0" || ch == "O" || ch == "I" || ch == "l") {
+                return false;
+            }
+            if (!((ch >= "1" && ch <= "9") || (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z"))) {
+                return false;
+            }
         }
+
+        return true;
     }
 
     function isValidPublicKey(uint256 x, uint256 y) public pure returns(bool) {
