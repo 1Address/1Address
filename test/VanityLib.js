@@ -55,25 +55,6 @@ contract('VanityLib', async function([_, registratorAccount, customerAccount, cu
         (web3.toAscii(await vanityLib.createBtcAddress.call(xPoint, yPoint))).should.be.equal("16UwLL9Risc3QfPqBUvKofHmBQ7wMtjv");
     })
 
-    it("should add public keys", async function() {
-        const x1 = "0x141511b7dc6c3b906d88d4f7acbbabdeeec6c7ab32be5eecc1b1e6c9a6e81f09";
-        const y1 = "0x2a26d9743e51ac77d5e8739ae507172c68cc57af727b2f57ab6e343765e476cd";
-        const x2 = "0xbef8aa5dc83f75aff0e42f10b923e01e76d2f1d830e1a89dfe8621975a6226fe";
-        const y2 = "0x6da72eaa3180aef4a0213e5430a6eb11a3b88f04914c7037e4bf1f499b11f8d5";
-
-        const [x3,y3] = await vanityLib.addXY.call(x1,y1,x2,y2);
-        web3.toHex(x3).should.be.equal("0x4e7a76a782377d21160d42a789abdc69dd42a382acd014c7e888bf561b5d7ce7");
-        web3.toHex(y3).should.be.equal("0x9f310d61e97646e2171cbd193634788fdddd1f4148f50b658bd53e28aae2d2e");
-    })
-
-    it("should create BTC public key from private key", async function() {
-        const privateKey = "0x18e14a7b6a307f426a94f8114701e7c8e774e7f9a47e2c2035db29a206321725"; //"0xeaf58f3ebd5ad92c16528b43ac41dadf267e50126568dcdd8a9196d469516659";
-        const [publicX,publicY] = await vanityLib.bitcoinPublicKey.call(privateKey, {gas: 7000000});
-        console.log(web3.toHex(publicX) + '\n' + web3.toHex(publicY));
-        web3.toHex(publicX).should.be.equal("0xbef8aa5dc83f75aff0e42f10b923e01e76d2f1d830e1a89dfe8621975a6226fe");
-        web3.toHex(publicY).should.be.equal("0x6da72eaa3180aef4a0213e5430a6eb11a3b88f04914c7037e4bf1f499b11f8d5");
-    })
-
     function makeIt(prefix, value) {
         it("should test difficulty for " + prefix, async function() {
             (await vanityLib.complexityForBtcAddressPrefix.call(web3.fromAscii(prefix))).should.be.bignumber.equal(value);
