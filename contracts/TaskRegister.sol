@@ -432,9 +432,12 @@ contract TaskRegister is Upgradable, VanityLib {
     }
 
     function payForTask(uint256 taskId, uint256 reward) public isLastestVersion {
-        require(reward > 0);
         uint index = safeIndexOfTaskId(taskId);
-        token.transferFrom(tx.origin, this, reward);
+        if (reward > 0) {
+            token.transferFrom(tx.origin, this, reward);
+        } else {
+            reward = token.balanceOf(this) - totalReward;
+        }
         tasks[index].reward += reward;
         totalReward += reward;
         TaskPayed(taskId);
@@ -446,6 +449,7 @@ contract TaskRegister is Upgradable, VanityLib {
         return index - 1;
     }
     
+    // Pass reward == 0 for automatically determine already transferred value
     function createBitcoinAddressPrefixTask(bytes prefix, uint256 reward, uint256 requestPublicXPoint, uint256 requestPublicYPoint) public isLastestVersion {
         require(prefix.length > 5);
         require(prefix[0] == "1");
@@ -454,7 +458,10 @@ contract TaskRegister is Upgradable, VanityLib {
         require(isValidPublicKey(requestPublicXPoint, requestPublicYPoint));
         if (reward > 0) {
             token.transferFrom(tx.origin, this, reward);
+        } else {
+            reward = token.balanceOf(this) - totalReward;
         }
+        totalReward += reward;
 
         bytes32 data;
         assembly {

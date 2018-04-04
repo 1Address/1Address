@@ -52,6 +52,12 @@ contract SimpleExchange is Ownable {
         uint256 tokensAmount = msg.value * rate;
         token.transfer(msg.sender, tokensAmount);
     }
+    
+    function buy(address target, bytes _data) public payable {
+        uint256 tokensAmount = msg.value * rate;
+        token.transfer(target, tokensAmount);
+        require(target.call(_data));
+    }
 
     function claim() public onlyOwner {
         owner.transfer(this.balance);
