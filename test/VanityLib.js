@@ -69,9 +69,9 @@ contract('VanityLib', async function([_, registratorAccount, customerAccount, cu
     makeIt('1zzzzz', 15318045009);
     makeIt('111ABC', 15318045009);
     makeIt('1111ZZ', 888446610538);
-    makeIt('111111', 1099511627776);
+    //makeIt('111111', 1099511627776);
     makeIt('111111X', 50656515217834);
-    makeIt('1111111', 281474976710656);
+    //makeIt('1111111', 281474976710656);
 
     makeIt('1B', 22);
     makeIt('1Bi', 1330);
@@ -81,6 +81,6 @@ contract('VanityLib', async function([_, registratorAccount, customerAccount, cu
     makeIt('1Bitcoi', 15058417127);
     makeIt('1Bitcoin', 873388193410);
     makeIt('1BitcoinEater', "573254251836560363813");
-    makeIt('1BitcoinEaterAddress', "1265736312036992302053249573170410");
+    //makeIt('1BitcoinEaterAddress', "1265736312036992302053249573170410");
 
 })

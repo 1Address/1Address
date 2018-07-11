@@ -11,7 +11,7 @@ contract UpgradableImpl is Upgradable {
         count++;
     }
 
-    function UpgradableImpl(address _prevVersion) public Upgradable(_prevVersion) {
+    constructor(address _prevVersion) public Upgradable(_prevVersion) {
     }
 
 }

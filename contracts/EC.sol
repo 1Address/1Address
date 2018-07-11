@@ -11,7 +11,7 @@ contract EC {
     uint256[] public gys;
     uint256[] public gzs;
 
-    function EC() public
+    constructor() public
     {
         gxs.push(gx);
         gys.push(gy);

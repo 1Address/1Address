@@ -34,8 +34,7 @@ contract('TaskRegister', async function([_, wallet1, wallet2, wallet3, wallet4, 
             await ec.prepare(17);
         }
 
-        token = await Token.new();
-        taskRegister = await TaskRegister.new(ec.address, token.address, 0);
+        taskRegister = await TaskRegister.new(ec.address, 0);
     });
 
     it("should work", async function() {
@@ -49,7 +48,7 @@ contract('TaskRegister', async function([_, wallet1, wallet2, wallet3, wallet4, 
         // 7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59
         //
 
-        const {receipt} = await taskRegister.createBitcoinAddressPrefixTask("1Anton", 0, "0xaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d", "0x7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59");
+        const {receipt} = await taskRegister.createBitcoinAddressPrefixTask("1Anton", "0xaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d", "0x7434c380f0aa4c500e220aa1a9d068514b1ff4d5019e624e7ba1efe82b340a59", { value: 100 });
         const taskId = web3.toBigNumber(receipt.logs[0].topics[1]);
 
         //
@@ -93,7 +92,7 @@ contract('TaskRegister', async function([_, wallet1, wallet2, wallet3, wallet4, 
         // 04
         // A3F24A728BEFEEC8C597F74EDE3BCFEC84131C71580DCFD07A1616C9FF536833
         // 76677A9066508541B906945C7EDE71F91D530C76D5706D5728A0D6DCD93455CC
-        const {receipt} = await taskRegister.createBitcoinAddressPrefixTask("1Phone", 0, "0xA3F24A728BEFEEC8C597F74EDE3BCFEC84131C71580DCFD07A1616C9FF536833", "0x76677A9066508541B906945C7EDE71F91D530C76D5706D5728A0D6DCD93455CC");
+        const {receipt} = await taskRegister.createBitcoinAddressPrefixTask("1Phone", "0xA3F24A728BEFEEC8C597F74EDE3BCFEC84131C71580DCFD07A1616C9FF536833", "0x76677A9066508541B906945C7EDE71F91D530C76D5706D5728A0D6DCD93455CC", { value: 100 });
         const taskId = web3.toBigNumber(receipt.logs[0].topics[1]);
 
         // Private Key: cede1f04f425831b0b1ef6396779834ff15afa5f176bd9800598bc935bde2477
