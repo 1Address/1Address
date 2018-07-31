@@ -6,26 +6,17 @@ import "./Upgradable.sol";
 
 
 contract IEC {
+    function ecadd(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure
+        returns(uint256 x3, uint256 y3);
 
-    function _inverse(uint256 a) public view 
-        returns(uint256 invA);
-
-    function _ecAdd(uint256 x1,uint256 y1,uint256 z1,
-                    uint256 x2,uint256 y2,uint256 z2) public view
-        returns(uint256 x3,uint256 y3,uint256 z3);
-
-    function _ecDouble(uint256 x1,uint256 y1,uint256 z1) public view
-        returns(uint256 x3,uint256 y3,uint256 z3);
-
-    function _ecMul(uint256 d, uint256 x1,uint256 y1,uint256 z1) public view
-        returns(uint256 x3,uint256 y3,uint256 z3);
-
-    function publicKey(uint256 privKey) public view
+    function ecmul(uint256 scalar, uint256 x, uint256 y) public pure
         returns(uint256 qx, uint256 qy);
 
-    function deriveKey(uint256 privKey, uint256 pubX, uint256 pubY) public view
+    function publicKey(uint256 privKey) public pure
         returns(uint256 qx, uint256 qy);
 
+    function publicKeyVerify(uint256 privKey, uint256 x, uint256 y) public pure
+        returns(bool);
 }
 
 contract TaskRegister is Upgradable, VanityLib {
@@ -170,7 +161,7 @@ contract TaskRegister is Upgradable, VanityLib {
         nextTaskId++;
     }
     
-    function solveTask(uint _taskId, uint256 _answerPrivateKey) public isLastestVersion {
+    function solveTask(uint _taskId, uint256 _answerPrivateKey, uint256 answerPublicXPoint, uint256 answerPublicYPoint) public isLastestVersion {
         uint taskIndex = safeIndexOfTaskId(_taskId);
         Task storage task = tasks[taskIndex];
         require(task.answerPrivateKey == 0, "solveTask: task is already solved");
@@ -183,25 +174,18 @@ contract TaskRegister is Upgradable, VanityLib {
         }
 
         if (task.taskType == TaskType.BITCOIN_ADDRESS_PREFIX) {
-            uint256 answerPublicXPoint;
-            uint256 answerPublicYPoint;
             uint256 publicXPoint;
             uint256 publicYPoint;
-            uint256 z;
-            (answerPublicXPoint, answerPublicYPoint) = ec.publicKey(_answerPrivateKey);
-            (publicXPoint, publicYPoint, z) = ec._ecAdd(
+            ///(answerPublicXPoint, answerPublicYPoint) = ec.publicKey(_answerPrivateKey);
+            require(ec.publicKeyVerify(_answerPrivateKey, answerPublicXPoint, answerPublicYPoint));
+            return;
+            (publicXPoint, publicYPoint) = ec.ecadd(
                 task.requestPublicXPoint,
                 task.requestPublicYPoint,
-                1,
                 answerPublicXPoint,
-                answerPublicYPoint,
-                1
+                answerPublicYPoint
             );
 
-            uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
-            z = ec._inverse(z);
-            publicXPoint = mulmod(publicXPoint, z, m);
-            publicYPoint = mulmod(publicYPoint, z, m);
             require(isValidPublicKey(publicXPoint, publicYPoint));
             
             bytes32 btcAddress = createBtcAddress(publicXPoint, publicYPoint);

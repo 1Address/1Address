@@ -7,30 +7,6 @@ contract EC {
     uint256 constant public n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
     uint256 constant public a = 0;
     uint256 constant public b = 7;
-    uint256[] public gxs;
-    uint256[] public gys;
-    uint256[] public gzs;
-
-    constructor() public
-    {
-        gxs.push(gx);
-        gys.push(gy);
-        gzs.push(1);
-    }
-    
-    function prepare(uint count) public
-    {
-        require(gxs.length < 256);
-        uint256 x = gxs[gxs.length - 1];
-        uint256 y = gys[gys.length - 1];
-        uint256 z = gzs[gzs.length - 1];
-        for (uint j = 0; j < count && gxs.length < 256; j++) {
-            (x,y,z) = _ecDouble(x,y,z);
-            gxs.push(x);
-            gys.push(y);
-            gzs.push(z);
-        }
-    }
 
     function _jAdd( uint256 x1,uint256 z1,
                     uint256 x2,uint256 z2) public pure
@@ -87,7 +63,7 @@ contract EC {
     }
 
 
-    function _ecAdd( uint256 x1,uint256 y1,uint256 z1,
+    function _ecAdd(uint256 x1,uint256 y1,uint256 z1,
                     uint256 x2,uint256 y2,uint256 z2) public pure
         returns(uint256 x3,uint256 y3,uint256 z3)
     {
@@ -143,8 +119,6 @@ contract EC {
         (x3,y3,z3) = _ecAdd(x1,y1,z1,x1,y1,z1);
     }
 
-
-
     function _ecMul(uint256 d, uint256 x1,uint256 y1,uint256 z1) public pure
         returns(uint256 x3,uint256 y3,uint256 z3)
     {
@@ -171,37 +145,56 @@ contract EC {
         (x3,y3,z3) = (acx,acy,acz);
     }
 
-    function publicKey(uint256 privKey) public constant
+    function ecadd(uint256 x1, uint256 y1,
+                   uint256 x2, uint256 y2) public pure
+        returns(uint256 x3, uint256 y3)
+    {
+        uint256 z;
+        (x3, y3, z) = _ecAdd(x1, y1, 1, x2, y2, 1);
+        z = _inverse(z);
+        x3 = mulmod(x3, z, n);
+        y3 = mulmod(y3, z, n);
+    }
+
+    function ecmul(uint256 x1, uint256 y1, uint256 scalar) public pure
+        returns(uint256 x2, uint256 y2)
+    {
+        uint256 z;
+        (x2, y2, z) = _ecMul(scalar, x1, y1, 1);
+        z = _inverse(z);
+        x2 = mulmod(x2, z, n);
+        y2 = mulmod(y2, z, n);
+    }
+
+    function ecmulVerify(uint256 x1, uint256 y1, uint256 scalar, uint256 qx, uint256 qy) public pure
+        returns(bool)
+    {
+        uint256 m = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+        address signer = ecrecover(0, y1 % 2 != 0 ? 28 : 27, bytes32(x1), bytes32(mulmod(scalar, x1, m)));
+        address xyAddress = address(uint256(keccak256(abi.encodePacked(qx, qy))) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+        return xyAddress == signer;
+    }
+
+    function publicKey(uint256 privKey) public pure
         returns(uint256 qx, uint256 qy)
     {
-        uint256 acx = 0;
-        uint256 acy = 0;
-        uint256 acz = 1;
+        return ecmul(gx, gy, privKey);
+    }
 
-        if (privKey == 0) {
-            return (0,0);
-        }
-
-        for (uint i = 0; i < 256; i++) {
-            if (((privKey >> i) & 1) != 0) {
-                (acx,acy,acz) = _ecAdd(acx,acy,acz, gxs[i],gys[i],gzs[i]);
-            }
-        }
-        
-        acz = _inverse(acz);
-        (qx,qy) = (mulmod(acx,acz,n),mulmod(acy,acz,n));
+    function publicKeyVerify(uint256 privKey, uint256 x, uint256 y) public pure
+        returns(bool)
+    {
+        return ecmulVerify(gx, gy, privKey, x, y);
     }
 
     function deriveKey(uint256 privKey, uint256 pubX, uint256 pubY) public pure
         returns(uint256 qx, uint256 qy)
     {
-        uint256 x;
-        uint256 y;
         uint256 z;
-        (x,y,z) = _ecMul(privKey, pubX, pubY, 1);
+        (qx, qy, z) = _ecMul(privKey, pubX, pubY, 1);
         z = _inverse(z);
-        qx = mulmod(x , z ,n);
-        qy = mulmod(y , z ,n);
+        qx = mulmod(qx, z, n);
+        qy = mulmod(qy, z, n);
     }
 
 }
