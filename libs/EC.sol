@@ -1,8 +1,6 @@
 pragma solidity ^0.4.24;
 
-//
-// https://github.com/jbaylina/ecsol
-//
+
 contract EC {
 
     uint256 constant public gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
@@ -11,8 +9,11 @@ contract EC {
     uint256 constant public a = 0;
     uint256 constant public b = 7;
 
-    function _jAdd(uint256 x1, uint256 z1,
-                   uint256 x2, uint256 z2) public pure
+    function _jAdd(
+        uint256 x1, uint256 z1,
+        uint256 x2, uint256 z2)
+        public 
+        pure
         returns(uint256 x3, uint256 z3)
     {
         (x3, z3) = (
@@ -25,8 +26,11 @@ contract EC {
         );
     }
 
-    function _jSub(uint256 x1, uint256 z1,
-                   uint256 x2, uint256 z2) public pure
+    function _jSub(
+        uint256 x1, uint256 z1,
+        uint256 x2, uint256 z2)
+        public 
+        pure
         returns(uint256 x3, uint256 z3)
     {
         (x3, z3) = (
@@ -39,8 +43,11 @@ contract EC {
         );
     }
 
-    function _jMul(uint256 x1, uint256 z1,
-                   uint256 x2, uint256 z2) public pure
+    function _jMul(
+        uint256 x1, uint256 z1,
+        uint256 x2, uint256 z2)
+        public 
+        pure
         returns(uint256 x3, uint256 z3)
     {
         (x3, z3) = (
@@ -49,8 +56,11 @@ contract EC {
         );
     }
 
-    function _jDiv(uint256 x1, uint256 z1,
-                   uint256 x2, uint256 z2) public pure
+    function _jDiv(
+        uint256 x1, uint256 z1,
+        uint256 x2, uint256 z2) 
+        public 
+        pure
         returns(uint256 x3, uint256 z3)
     {
         (x3, z3) = (
@@ -77,12 +87,14 @@ contract EC {
         return t;
     }
 
-
-    function _ecAdd(uint256 x1, uint256 y1, uint256 z1,
-                    uint256 x2, uint256 y2, uint256 z2) public pure
+    function _ecAdd(
+        uint256 x1, uint256 y1, uint256 z1,
+        uint256 x2, uint256 y2, uint256 z2) 
+        public 
+        pure
         returns(uint256 x3, uint256 y3, uint256 z3)
     {
-        uint256 l;
+        uint256 lx;
         uint256 lz;
         uint256 da;
         uint256 db;
@@ -96,24 +108,24 @@ contract EC {
         }
 
         if (x1 == x2 && y1 == y2) {
-            (l, lz) = _jMul(x1, z1, x1, z1);
-            (l, lz) = _jMul(l, lz, 3, 1);
-            (l, lz) = _jAdd(l, lz, a, 1);
+            (lx, lz) = _jMul(x1, z1, x1, z1);
+            (lx, lz) = _jMul(lx, lz, 3, 1);
+            (lx, lz) = _jAdd(lx, lz, a, 1);
 
             (da,db) = _jMul(y1, z1, 2, 1);
         } else {
-            (l, lz) = _jSub(y2, z2, y1, z1);
+            (lx, lz) = _jSub(y2, z2, y1, z1);
             (da, db) = _jSub(x2, z2, x1, z1);
         }
 
-        (l, lz) = _jDiv(l, lz, da, db);
+        (lx, lz) = _jDiv(lx, lz, da, db);
 
-        (x3, da) = _jMul(l, lz, l, lz);
+        (x3, da) = _jMul(lx, lz, lx, lz);
         (x3, da) = _jSub(x3, da, x1, z1);
         (x3, da) = _jSub(x3, da, x2, z2);
 
         (y3, db) = _jSub(x1, z1, x3, da);
-        (y3, db) = _jMul(y3, db, l, lz);
+        (y3, db) = _jMul(y3, db, lx, lz);
         (y3, db) = _jSub(y3, db, y1, z1);
 
         if (da != db) {
@@ -157,8 +169,11 @@ contract EC {
         (x3, y3, z3) = (acx, acy, acz);
     }
 
-    function ecadd(uint256 x1, uint256 y1,
-                   uint256 x2, uint256 y2) public pure
+    function ecadd(
+        uint256 x1, uint256 y1,
+        uint256 x2, uint256 y2)
+        public
+        pure
         returns(uint256 x3, uint256 y3)
     {
         uint256 z;

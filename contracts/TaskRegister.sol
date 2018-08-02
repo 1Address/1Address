@@ -1,25 +1,14 @@
 pragma solidity ^0.4.24;
 
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "../libs/EC.sol";
 import "./VanityLib.sol";
 import "./Upgradable.sol";
 
 
-contract IEC {
-    function ecadd(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure
-        returns(uint256 x3, uint256 y3);
-
-    function ecmul(uint256 scalar, uint256 x, uint256 y) public pure
-        returns(uint256 qx, uint256 qy);
-
-    function publicKey(uint256 privKey) public pure
-        returns(uint256 qx, uint256 qy);
-
-    function publicKeyVerify(uint256 privKey, uint256 x, uint256 y) public pure
-        returns(bool);
-}
-
 contract TaskRegister is Upgradable, VanityLib {
+    using SafeMath for uint256;
 
     enum TaskType {
         BITCOIN_ADDRESS_PREFIX
@@ -29,6 +18,7 @@ contract TaskRegister is Upgradable, VanityLib {
         TaskType taskType;
         uint256 taskId;
         address creator;
+        address referrer;
         uint256 reward;
         bytes32 data;
         uint256 dataLength;
@@ -37,19 +27,33 @@ contract TaskRegister is Upgradable, VanityLib {
         uint256 answerPrivateKey;
     }
 
-    IEC public ec;
+    EC public ec;
     uint256 public nextTaskId = 1;
     uint256 public totalReward;
+    uint256 constant public MAX_PERCENT = 1000000;
+    uint256 public serviceFee; // 1% == 10000, 100% == 1000000
+    uint256 public referrerFee; // Calculated from service fee, 50% == 500000
     
     Task[] public tasks;
     Task[] public completedTasks;
     mapping(uint256 => uint) public indexOfTaskId; // Starting from 1
+
     event TaskCreated(uint256 indexed taskId);
-    event TaskSolved(uint256 indexed taskId);
-    event TaskPayed(uint256 indexed taskId);
+    event TaskSolved(uint256 indexed taskId, uint256 reward);
+    event TaskPayed(uint256 indexed taskId, uint256 value);
 
     constructor(address _ec, address _prevVersion) public Upgradable(_prevVersion) {
-        ec = IEC(_ec);
+        ec = EC(_ec);
+    }
+
+    function setServiceFee(uint256 _serviceFee) public onlyOwner {
+        require(_serviceFee < 20000); // 2% of reward
+        serviceFee = _serviceFee;
+    }
+
+    function setReferrerFee(uint256 _referrerFee) public onlyOwner {
+        require(_referrerFee < 50000); // 50% of serviceFee
+        referrerFee = _referrerFee;
     }
 
     function upgrade(uint _size) public onlyOwner {
@@ -59,14 +63,17 @@ contract TaskRegister is Upgradable, VanityLib {
         // Migrate some vars
         nextTaskId = TaskRegister(upgradableState.prevVersion).nextTaskId();
         totalReward = TaskRegister(upgradableState.prevVersion).totalReward();
-
+        //TODO: uncomment for the next version
+        //serviceFee = TaskRegister(upgradableState.prevVersion).serviceFee();
+        //referrerFee = TaskRegister(upgradableState.prevVersion).referrerFee();
+        
         uint index = tasks.length;
         uint tasksCount = TaskRegister(upgradableState.prevVersion).tasksCount();
 
         // Migrate tasks
 
         for (uint i = index; i < index + _size && i < tasksCount; i++) {
-            tasks.push(Task(TaskType.BITCOIN_ADDRESS_PREFIX,0,0,0,bytes32(0),0,0,0,0));
+            tasks.push(Task(TaskType.BITCOIN_ADDRESS_PREFIX,0,0,0,0,bytes32(0),0,0,0,0));
         }
 
         for (uint j = index; j < index + _size && j < tasksCount; j++) {
@@ -74,8 +81,9 @@ contract TaskRegister is Upgradable, VanityLib {
                 tasks[j].taskType,
                 tasks[j].taskId,
                 tasks[j].creator,
-                tasks[j].reward,
-                tasks[j].data,
+                tasks[j].referrer,
+                ,//tasks[j].reward,
+                ,//tasks[j].data,
                 ,//tasks[j].dataLength, 
                 ,//tasks[j].requestPublicXPoint, 
                 ,//tasks[j].requestPublicYPoint,
@@ -84,18 +92,34 @@ contract TaskRegister is Upgradable, VanityLib {
             indexOfTaskId[tasks[j].taskId] = j + 1;
         }
 
-        for (uint k = index; k < index + _size && k < tasksCount; k++) {
+        for (j = index; j < index + _size && j < tasksCount; j++) {
             (
-                ,//tasks[k].taskType,
-                ,//tasks[k].taskId,
-                ,//tasks[k].creator,
-                ,//tasks[k].reward,
-                ,//tasks[k].data,
-                tasks[k].dataLength, 
-                tasks[k].requestPublicXPoint, 
-                tasks[k].requestPublicYPoint,
-                tasks[k].answerPrivateKey
-            ) = TaskRegister(upgradableState.prevVersion).tasks(k);
+                ,//tasks[j].taskType,
+                ,//tasks[j].taskId,
+                ,//tasks[j].creator,
+                ,//tasks[j].referrer,
+                tasks[j].reward,
+                tasks[j].data,
+                tasks[j].dataLength, 
+                tasks[j].requestPublicXPoint, 
+                ,//tasks[j].requestPublicYPoint,
+                 //tasks[j].answerPrivateKey
+            ) = TaskRegister(upgradableState.prevVersion).tasks(j);
+        }
+
+        for (j = index; j < index + _size && j < tasksCount; j++) {
+            (
+                ,//tasks[j].taskType,
+                ,//tasks[j].taskId,
+                ,//tasks[j].creator,
+                ,//tasks[j].referrer,
+                ,//tasks[j].reward,
+                ,//tasks[j].data,
+                ,//tasks[j].dataLength, 
+                ,//tasks[j].requestPublicXPoint, 
+                tasks[j].requestPublicYPoint,
+                tasks[j].answerPrivateKey
+            ) = TaskRegister(upgradableState.prevVersion).tasks(j);
         }
     }
     
@@ -112,21 +136,23 @@ contract TaskRegister is Upgradable, VanityLib {
     }
 
     function payForTask(uint256 _taskId) payable public isLastestVersion {
-        uint index = safeIndexOfTaskId(_taskId);
-        _payForTask(tasks[index], _taskId);
+        if (msg.value > 0) {
+            Task storage task = tasks[safeIndexOfTaskId(_taskId)];
+            task.reward = task.reward.add(msg.value);
+            totalReward = totalReward.add(msg.value);
+            emit TaskPayed(_taskId, msg.value);
+        }
     }
 
     function safeIndexOfTaskId(uint _taskId) public view returns(uint) {
-        uint index = indexOfTaskId[_taskId];
-        require(index > 0);
-        return index - 1;
+        return indexOfTaskId[_taskId].sub(1);
     }
     
-    // Pass reward == 0 for automatically determine already transferred value
     function createBitcoinAddressPrefixTask(
         bytes prefix,
         uint256 requestPublicXPoint,
-        uint256 requestPublicYPoint
+        uint256 requestPublicYPoint,
+        address referrer
     )
         payable
         public
@@ -145,8 +171,9 @@ contract TaskRegister is Upgradable, VanityLib {
         
         Task memory task = Task({
             taskType: TaskType.BITCOIN_ADDRESS_PREFIX,
-            taskId: nextTaskId,
+            taskId: nextTaskId++,
             creator: msg.sender,
+            referrer: referrer,
             reward: 0,
             data: data,
             dataLength: prefix.length,
@@ -155,35 +182,27 @@ contract TaskRegister is Upgradable, VanityLib {
             answerPrivateKey: 0
         });
 
-        indexOfTaskId[nextTaskId] = tasks.push(task); // incremented to avoid 0 index
-        emit TaskCreated(nextTaskId);
-        _payForTask(tasks[tasks.length - 1], nextTaskId);
-        nextTaskId++;
+        indexOfTaskId[task.taskId] = tasks.push(task); // incremented to avoid 0 index
+        emit TaskCreated(task.taskId);
+        payForTask(task.taskId);
     }
     
-    function solveTask(uint _taskId, uint256 _answerPrivateKey, uint256 answerPublicXPoint, uint256 answerPublicYPoint) public isLastestVersion {
+    function solveTask(uint _taskId, uint256 _answerPrivateKey, uint256 publicXPoint, uint256 publicYPoint) public isLastestVersion {
         uint taskIndex = safeIndexOfTaskId(_taskId);
         Task storage task = tasks[taskIndex];
         require(task.answerPrivateKey == 0, "solveTask: task is already solved");
 
         // Require private key to be part of address to prevent front-running attack
-        bytes32 answerPrivateKeyBytes = bytes32(_answerPrivateKey);
-        bytes32 senderAddressBytes = bytes32(uint256(msg.sender) << 96);
-        for (uint i = 0; i < 16; i++) {
-            require(answerPrivateKeyBytes[i] == senderAddressBytes[i], "solveTask: this solution does not match miner address");
-        }
+        require(_answerPrivateKey >> 128 == uint256(msg.sender) >> 32, "solveTask: this solution does not match miner address");
 
         if (task.taskType == TaskType.BITCOIN_ADDRESS_PREFIX) {
-            uint256 publicXPoint;
-            uint256 publicYPoint;
-            ///(answerPublicXPoint, answerPublicYPoint) = ec.publicKey(_answerPrivateKey);
-            require(ec.publicKeyVerify(_answerPrivateKey, answerPublicXPoint, answerPublicYPoint));
-            return;
+            ///(publicXPoint, publicYPoint) = ec.publicKey(_answerPrivateKey);
+            require(ec.publicKeyVerify(_answerPrivateKey, publicXPoint, publicYPoint));
             (publicXPoint, publicYPoint) = ec.ecadd(
                 task.requestPublicXPoint,
                 task.requestPublicYPoint,
-                answerPublicXPoint,
-                answerPublicYPoint
+                publicXPoint,
+                publicYPoint
             );
 
             require(isValidPublicKey(publicXPoint, publicYPoint));
@@ -197,18 +216,18 @@ contract TaskRegister is Upgradable, VanityLib {
             revert();
         }
 
-        msg.sender.transfer(task.reward * 99 / 100); // 1% fee
-        totalReward -= task.reward * 99 / 100;
+        uint256 minerReward = task.reward.mul(MAX_PERCENT - serviceFee).div(MAX_PERCENT); // 1% fee
+        msg.sender.transfer(minerReward);
+        totalReward = totalReward.sub(minerReward);
+
+        if (task.referrer != 0) {
+            uint256 referrerReward = task.reward.mul(serviceFee).mul(referrerFee).div(MAX_PERCENT).div(MAX_PERCENT); // 50% of service fee
+            task.referrer.transfer(referrerReward);
+            totalReward = totalReward.sub(referrerReward);
+        }
 
         _completeTask(_taskId, taskIndex);
-        emit TaskSolved(_taskId);
-    }
-
-    function _payForTask(Task storage _task, uint _taskId) internal {
-        require(msg.value > 0, "payForTask: provide non zero payment");
-        _task.reward += msg.value;
-        totalReward += msg.value;
-        emit TaskPayed(_taskId);
+        emit TaskSolved(_taskId, minerReward);
     }
 
     function _completeTask(uint _taskId, uint _index) internal {

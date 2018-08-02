@@ -4,14 +4,11 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 contract IUpgradable {
-
     function startUpgrade() public;
     function endUpgrade() public;
-
 }
 
 contract Upgradable is Ownable {
-
     struct UpgradableState {
         bool isUpgrading;
         address prevVersion;
@@ -71,5 +68,4 @@ contract Upgradable is Ownable {
             emit Initialized(upgradableState.prevVersion);
         }
     }
-
 }
