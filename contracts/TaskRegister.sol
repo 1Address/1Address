@@ -47,12 +47,12 @@ contract TaskRegister is Upgradable, VanityLib {
     }
 
     function setServiceFee(uint256 _serviceFee) public onlyOwner {
-        require(_serviceFee < 20000); // 2% of reward
+        require(_serviceFee <= 20000); // 2% of reward
         serviceFee = _serviceFee;
     }
 
     function setReferrerFee(uint256 _referrerFee) public onlyOwner {
-        require(_referrerFee < 50000); // 50% of serviceFee
+        require(_referrerFee <= 500000); // 50% of serviceFee
         referrerFee = _referrerFee;
     }
 
@@ -63,9 +63,8 @@ contract TaskRegister is Upgradable, VanityLib {
         // Migrate some vars
         nextTaskId = TaskRegister(upgradableState.prevVersion).nextTaskId();
         totalReward = TaskRegister(upgradableState.prevVersion).totalReward();
-        //TODO: uncomment for the next version
-        //serviceFee = TaskRegister(upgradableState.prevVersion).serviceFee();
-        //referrerFee = TaskRegister(upgradableState.prevVersion).referrerFee();
+        serviceFee = TaskRegister(upgradableState.prevVersion).serviceFee();
+        referrerFee = TaskRegister(upgradableState.prevVersion).referrerFee();
         
         uint index = tasks.length;
         uint tasksCount = TaskRegister(upgradableState.prevVersion).tasksCount();
