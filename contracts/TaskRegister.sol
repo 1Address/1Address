@@ -124,6 +124,10 @@ contract TaskRegister is Upgradable, VanityLib {
     
     function endUpgrade() public {
         super.endUpgrade();
+
+        if (upgradableState.nextVersion != 0) {
+            upgradableState.nextVersion.transfer(address(this).balance);
+        }
     }
 
     function tasksCount() public view returns(uint) {

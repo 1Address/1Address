@@ -37,7 +37,8 @@
   "scripts": {
     "test": "truffle test",
     "coverage": "./node_modules/.bin/solidity-coverage",
-    "rpc": "scripts/rpc.sh"
+    "rpc": "scripts/rpc.sh",
+    "flat": "truffle-flattener contracts/TaskRegister.sol > 1.sol"
   },
   "repository": {
     "type": "git",
