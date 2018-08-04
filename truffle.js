@@ -2,19 +2,26 @@ require('babel-register');
 require('babel-polyfill');
 
 module.exports = {
-  migrations_directory: "./migrations",
-  networks: {
-    development: {
-      host: "localhost",
-      port: 9545,
-      gas: 6500000,
-      network_id: "*" // Match any network id
+    migrations_directory: "./migrations",
+    networks: {
+        development: {
+            host: "localhost",
+            port: 9545,
+            network_id: "*",
+            gas: 8000000
+        },
+        coverage: {
+            host: "localhost",
+            port: 8555,
+            network_id: "*",
+            gas: 0xffffffff,
+            gasPrice: 0x01
+        }
     },
-    ropsten: {
-      host: "localhost",
-      port: 8545,
-      gas: 4500000,
-      network_id: "3" // Match any network id
+    solc: {
+        optimizer: {
+            enabled: true,
+            runs: 200
+        }
     }
-  }
 };
