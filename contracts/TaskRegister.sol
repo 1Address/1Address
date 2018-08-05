@@ -231,6 +231,11 @@ contract TaskRegister is Upgradable, VanityLib {
         //_removeAllActiveTasksWithHoles(0, taskIds.length);
     }
 
+    function () public payable {
+        require(msg.sender == upgradableState.prevVersion);
+        require(address(this).balance >= totalReward);
+    }
+
     function payForTask(uint256 _taskId) public payable isLastestVersion {
         if (msg.value > 0) {
             Task storage task = allTasks[indexOfTaskId[_taskId].sub(1)];
