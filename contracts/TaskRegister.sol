@@ -40,7 +40,7 @@ contract TaskRegister is Upgradable, VanityLib {
     mapping(uint256 => uint) public indexOfCompletedTaskId; // Starting from 1
 
     event TaskCreated(uint256 indexed taskId);
-    event TaskSolved(uint256 indexed taskId, uint256 reward);
+    event TaskSolved(uint256 indexed taskId, uint256 minerReward, uint256 referrerReward);
     event TaskPayed(uint256 indexed taskId, uint256 value);
 
     constructor(address _ec, address _prevVersion) public Upgradable(_prevVersion) {
@@ -286,8 +286,8 @@ contract TaskRegister is Upgradable, VanityLib {
     }
 
     function solveTask(uint _taskId, uint256 _answerPrivateKey, uint256 publicXPoint, uint256 publicYPoint) public isLastestVersion {
-        uint activeTaskIndex = indexOfTaskId[_taskId].sub(1);
-        Task storage task = allTasks[activeTaskIndex];
+        uint taskIndex = indexOfTaskId[_taskId].sub(1);
+        Task storage task = allTasks[taskIndex];
         require(task.answerPrivateKey == 0, "solveTask: task is already solved");
         
         // Require private key to be part of address to prevent front-running attack
@@ -317,22 +317,25 @@ contract TaskRegister is Upgradable, VanityLib {
         if (serviceReward != 0 && task.referrer != 0) {
             uint256 referrerReward = serviceReward.mul(referrerFee).div(MAX_PERCENT); // 50% of service reward
             task.referrer.transfer(referrerReward);
+            emit TaskSolved(_taskId, minerReward, referrerReward);
+        } else {
+            emit TaskSolved(_taskId, minerReward, 0);
         }
         msg.sender.transfer(minerReward);
         totalReward -= taskReard;
 
-        _completeTask(_taskId, activeTaskIndex);
-        emit TaskSolved(_taskId, minerReward);
+        _completeTask(_taskId);
     }
 
-    function _completeTask(uint _taskId, uint _activeTaskIndex) internal {
+    function _completeTask(uint _taskId) internal {
         indexOfCompletedTaskId[_taskId] = completedTaskIds.push(_taskId);
+        uint activeTaskIndex = indexOfActiveTaskId[_taskId].sub(1);
         delete indexOfActiveTaskId[_taskId];
 
-        if (_activeTaskIndex + 1 < taskIds.length) { // if not latest
+        if (activeTaskIndex + 1 < taskIds.length) { // if not latest
             uint256 lastTaskId = taskIds[taskIds.length - 1];
-            taskIds[_activeTaskIndex] = lastTaskId;
-            indexOfActiveTaskId[lastTaskId] = _activeTaskIndex + 1;
+            taskIds[activeTaskIndex] = lastTaskId;
+            indexOfActiveTaskId[lastTaskId] = activeTaskIndex + 1;
         }
         taskIds.length -= 1;
     }
